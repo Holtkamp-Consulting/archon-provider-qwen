@@ -1,0 +1,40 @@
+name: qwen-smoke
+description: |
+  Use when: smoke-testing the qwen provider plugin against a local LM Studio model.
+provider: qwen
+
+worktree:
+  enabled: false
+
+nodes:
+  - id: edit
+    prompt: |
+      Use your file-writing tool to create a file named NOTES.md in the current directory
+      containing exactly this single line: hello from qwen
+      Do not do anything else. When the file exists, reply with the single word: done
+    idle_timeout: 600000
+
+  - id: json
+    depends_on: [edit]
+    model: qwen/qwen3.8-27b
+    allowed_tools: []
+    idle_timeout: 600000
+    prompt: |
+      Return a JSON object with two fields: "answer" set to the string "forty-two",
+      and "ok" set to true.
+    output_format:
+      type: object
+      properties:
+        answer:
+          type: string
+        ok:
+          type: boolean
+      required: [answer, ok]
+
+  - id: assert
+    depends_on: [edit, json]
+    bash: |
+      set -e
+      grep -qx 'hello from qwen' NOTES.md
+      test "$json.output.ok" = "true"
+      echo "answer=$json.output.answer ok=$json.output.ok"

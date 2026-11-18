@@ -63,6 +63,10 @@ settings. When it is set, the plugin passes `--model` and fails the turn as
 `misconfigured` if Qwen Code starts with a different model (Qwen Code silently falls back
 to its default for an unknown model id).
 
+`examples/qwen-smoke.yaml` is a three-node smoke workflow (file edit, `output_format`
+with `allowed_tools: []` and an explicit model, bash assertion). Copy it to a scratch
+repository's `.archon/workflows/` and run `archon workflow run qwen-smoke "smoke"`.
+
 ## How it runs
 
 Each turn starts one `qwen` process in its own process group, in the node's working

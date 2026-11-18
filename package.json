@@ -1,0 +1,24 @@
+{
+  "name": "archon-provider-qwen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Archon provider plugin that runs agent sessions through the Qwen Code CLI",
+  "license": "MIT",
+  "workspaces": ["vendor/*"],
+  "scripts": {
+    "start": "bun src/main.ts",
+    "test": "bun test",
+    "type-check": "tsc --noEmit",
+    "build": "bash scripts/build.sh"
+  },
+  "dependencies": {
+    "@archon/provider-contract": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": { "bun": ">=1.4.2" }
+}

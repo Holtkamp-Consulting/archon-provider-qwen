@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "provider",
+  "name": "provider-qwen",
+  "description": "Run Archon agent sessions through the Qwen Code CLI (for example against a local LM Studio model).",
+  "executable": "archon-provider-qwen",
+  "compatibility": {
+    "archon": ">=0.14.0"
+  }
+}

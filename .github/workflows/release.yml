@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  BUN_VERSION: '1.4.2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: bun-linux-x64
+            test: true
+          - os: ubuntu-latest
+            target: bun-linux-arm64
+            test: false
+          - os: macos-latest
+            target: bun-darwin-arm64
+            test: true
+          - os: macos-latest
+            target: bun-darwin-x64
+            test: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+
+      - name: Check tag matches package version
+        run: |
+          version=$(bun -e 'console.log((await Bun.file("package.json").json()).version)')
+          case "${GITHUB_REF_NAME}" in
+            "v${version}" | "v${version}-"*) ;;
+            *)
+              echo "Tag ${GITHUB_REF_NAME} does not match package.json version ${version}" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Build
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          asset="archon-provider-qwen-${TARGET#bun-}"
+          OUTFILE="dist/${asset}" bash scripts/build.sh
+          echo "ASSET=${asset}" >> "$GITHUB_ENV"
+
+      - name: Conformance against the release executable
+        if: matrix.test
+        env:
+          ARCHON_PROVIDER_QWEN_BINARY: ${{ github.workspace }}/dist/${{ env.ASSET }}
+        run: bun test
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ASSET }}
+          path: dist/${{ env.ASSET }}
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Checksums
+        working-directory: assets
+        run: |
+          chmod +x archon-provider-qwen-*
+          sha256sum archon-provider-qwen-* > checksums.txt
+          cat checksums.txt
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=()
+          case "${GITHUB_REF_NAME}" in *-*) prerelease=(--prerelease) ;; esac
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            "${prerelease[@]}" \
+            assets/archon-provider-qwen-* assets/checksums.txt

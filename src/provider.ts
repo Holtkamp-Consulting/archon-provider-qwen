@@ -101,7 +101,9 @@ export class QwenProvider implements IAgentProvider {
     return capabilities;
   }
 
-  async checkCredential(request: { env: Record<string, string> }): ReturnType<IAgentProvider['checkCredential']> {
+  async checkCredential(
+    request: Parameters<IAgentProvider['checkCredential']>[0]
+  ): ReturnType<IAgentProvider['checkCredential']> {
     // Qwen Code owns its auth (settings.json modelProviders, env keys, OAuth). Checking it
     // would need a model request, so only a missing CLI is reported.
     const binary = resolveQwenBinary({ ...process.env, ...request.env });
